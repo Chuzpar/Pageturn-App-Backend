@@ -4,7 +4,6 @@ from app import db
 
 
 class User(db.Model):
-    """Sprint 1 - Task 5: Create User Database Model"""
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
