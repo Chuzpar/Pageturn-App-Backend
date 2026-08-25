@@ -46,7 +46,6 @@ def login():
     return jsonify({"token": token, "user": user.to_dict()}), 200
 
 
-# --- Sprint 1 - Task 15: Authentication state (session check) ---
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def me():
@@ -56,7 +55,6 @@ def me():
     return jsonify({"user": user.to_dict()})
 
 
-# --- Sprint 5 - Task 1: Create User Profile API (GET is /me above) ---
 # --- Sprint 5 - Task 4: Create Account Update API ---
 @auth_bp.route("/profile", methods=["PUT"])
 @jwt_required()
