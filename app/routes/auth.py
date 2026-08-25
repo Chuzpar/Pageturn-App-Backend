@@ -32,7 +32,6 @@ def register():
     return jsonify({"token": token, "user": user.to_dict()}), 201
 
 
-# --- Sprint 1 - Task 8: Create Login API ---
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(force=True, silent=True) or {}
