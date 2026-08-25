@@ -55,7 +55,6 @@ def me():
     return jsonify({"user": user.to_dict()})
 
 
-# --- Sprint 5 - Task 4: Create Account Update API ---
 @auth_bp.route("/profile", methods=["PUT"])
 @jwt_required()
 def update_profile():
