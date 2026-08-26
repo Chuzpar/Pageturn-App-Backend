@@ -24,15 +24,12 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "An account with this email already exists"}), 409
 
-    user = User(full_name=full_name, email=email, role=data.get("role", "member"))
+    user = User(full_name=full_name, email=email, role="member")
     user.set_password(password)  # Task 10: password hashing
     db.session.add(user)
     db.session.commit()
 
     
-
-    token = create_access_token(identity=str(user.id))
-    return jsonify({"token": token, "user": user.to_dict()}), 201
 
     token = create_access_token(identity=str(user.id))
     return jsonify({"token": token, "user": user.to_dict()}), 201
