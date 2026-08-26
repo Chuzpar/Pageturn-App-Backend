@@ -67,3 +67,4 @@ def initiate_return(request_id):
     lr.book.stock_for_lending += 1
     db.session.commit()
     return jsonify({"request": lr.to_dict()})
+    return jsonify({"request": lr.to_dict()})
