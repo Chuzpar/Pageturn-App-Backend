@@ -8,6 +8,7 @@ from app.utils import current_user
 
 lending_bp = Blueprint("lending", __name__)
 
+
 @lending_bp.route("/requests", methods=["POST"])
 @jwt_required()
 def submit_lending_requests():
@@ -50,6 +51,7 @@ def my_borrowed_books():
     borrowed = LendingRequest.query.filter_by(user_id=user.id, status="approved").all()
     return jsonify({"borrowed": [r.to_dict() for r in borrowed]})
 
+
 @lending_bp.route("/requests/<int:request_id>/return", methods=["POST"])
 @jwt_required()
 def initiate_return(request_id):
@@ -64,4 +66,5 @@ def initiate_return(request_id):
     lr.returned_at = datetime.utcnow()
     lr.book.stock_for_lending += 1
     db.session.commit()
+    return jsonify({"request": lr.to_dict()})
     return jsonify({"request": lr.to_dict()})

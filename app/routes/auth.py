@@ -34,6 +34,10 @@ def register():
     token = create_access_token(identity=str(user.id))
     return jsonify({"token": token, "user": user.to_dict()}), 201
 
+    token = create_access_token(identity=str(user.id))
+    return jsonify({"token": token, "user": user.to_dict()}), 201
+
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(force=True, silent=True) or {}
@@ -46,6 +50,7 @@ def login():
 
     token = create_access_token(identity=str(user.id))
     return jsonify({"token": token, "user": user.to_dict()}), 200
+
 
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()

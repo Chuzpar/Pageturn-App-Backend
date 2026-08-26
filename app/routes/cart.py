@@ -71,3 +71,4 @@ def update_cart_item(item_id):
         item.lending_days = data["lending_days"]
     db.session.commit()
     return jsonify({"item": item.to_dict()})
+    return jsonify({"item": item.to_dict()})
