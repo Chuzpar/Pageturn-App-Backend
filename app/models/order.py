@@ -3,7 +3,6 @@ from app import db
 
 
 class Order(db.Model):
-    """Sprint 3 - Task 1 & 10: Create Purchase / Order Database Model"""
     __tablename__ = "orders"
 
     id = db.Column(db.Integer, primary_key=True)

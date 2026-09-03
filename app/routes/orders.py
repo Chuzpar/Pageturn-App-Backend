@@ -9,7 +9,6 @@ orders_bp = Blueprint("orders", __name__)
 
 TAX_RATE = 0.08
 
-
 @orders_bp.route("/checkout", methods=["POST"])
 @jwt_required()
 def checkout():
@@ -26,7 +25,6 @@ def checkout():
     if not shipping_address:
         return jsonify({"error": "Shipping address is required"}), 400
     if not card_number or len(card_number.replace(" ", "")) < 12:
-        # --- Sprint 3 - Task 12: Implement Payment Workflow (validation) ---
         return jsonify({"error": "A valid card number is required"}), 400
 
     subtotal = sum(ci.book.price * ci.quantity for ci in cart_items if ci.book)
@@ -54,7 +52,6 @@ def checkout():
 
     db.session.commit()
     return jsonify({"order": order.to_dict()}), 201
-
 
 @orders_bp.route("", methods=["GET"])
 @jwt_required()

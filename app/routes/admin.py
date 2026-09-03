@@ -1,33 +1,18 @@
-from flask import Blueprint, jsonify, request
-
+from flask import Blueprint, request, jsonify
 from app import db
 from app.models.book import Book
 from app.models.lending import LendingRequest
 from app.models.order import Order
 from app.utils import admin_required, current_user
 
-
 admin_bp = Blueprint("admin", __name__)
-
-
-@admin_bp.route("/dashboard", methods=["GET"])
-@admin_required
-def admin_dashboard():
-    return jsonify({
-        "total_books": Book.query.count(),
-        "pending_lending_requests": LendingRequest.query.filter_by(status="pending").count(),
-        "active_loans": LendingRequest.query.filter_by(status="approved").count(),
-        "total_orders": Order.query.count(),
-        "orders_awaiting_approval": Order.query.filter_by(status="paid").count(),
-        "total_revenue": db.session.query(db.func.coalesce(db.func.sum(Order.total), 0.0)).scalar(),
-    })
 
 
 @admin_bp.route("/books", methods=["GET"])
 @admin_required
 def admin_list_books():
     books = Book.query.order_by(Book.created_at.desc()).all()
-    return jsonify({"books": [book.to_dict() for book in books]})
+    return jsonify({"books": [b.to_dict() for b in books]})
 
 
 @admin_bp.route("/books", methods=["POST"])
@@ -38,6 +23,7 @@ def admin_create_book():
     author = (data.get("author") or "").strip()
     if not title or not author:
         return jsonify({"error": "title and author are required"}), 400
+
     book = Book(
         title=title,
         author=author,
@@ -89,70 +75,80 @@ def admin_list_lending_requests():
     query = LendingRequest.query
     if status != "all":
         query = query.filter_by(status=status)
-    lending_requests = query.order_by(LendingRequest.requested_at.desc()).all()
-    return jsonify({"requests": [item.to_dict() for item in lending_requests]})
+    reqs = query.order_by(LendingRequest.requested_at.desc()).all()
+    return jsonify({"requests": [r.to_dict() for r in reqs]})
 
 
 @admin_bp.route("/lending-requests/<int:request_id>/approve", methods=["POST"])
 @admin_required
 def admin_approve_lending(request_id):
-    lending_request = LendingRequest.query.get(request_id)
-    if not lending_request:
+    lr = LendingRequest.query.get(request_id)
+    if not lr:
         return jsonify({"error": "Request not found"}), 404
-    if lending_request.status != "pending":
-        return jsonify({"error": f"Request already {lending_request.status}"}), 400
-    if lending_request.book.stock_for_lending <= 0:
+    if lr.status != "pending":
+        return jsonify({"error": f"Request already {lr.status}"}), 400
+    if lr.book.stock_for_lending <= 0:
         return jsonify({"error": "No copies available to lend"}), 400
-    lending_request.approve()
-    lending_request.book.stock_for_lending -= 1
+
+    lr.approve()
+    lr.book.stock_for_lending -= 1
     db.session.commit()
-    return jsonify({"request": lending_request.to_dict()})
+    return jsonify({"request": lr.to_dict()})
 
 
 @admin_bp.route("/lending-requests/<int:request_id>/reject", methods=["POST"])
 @admin_required
 def admin_reject_lending(request_id):
-    lending_request = LendingRequest.query.get(request_id)
-    if not lending_request:
+    lr = LendingRequest.query.get(request_id)
+    if not lr:
         return jsonify({"error": "Request not found"}), 404
-    if lending_request.status != "pending":
-        return jsonify({"error": f"Request already {lending_request.status}"}), 400
-    data = request.get_json(force=True, silent=True) or {}
-    lending_request.status = "rejected"
-    lending_request.reviewer_notes = data.get("notes")
-    db.session.commit()
-    return jsonify({"request": lending_request.to_dict()})
+    if lr.status != "pending":
+        return jsonify({"error": f"Request already {lr.status}"}), 400
 
+    data = request.get_json(force=True, silent=True) or {}
+    lr.status = "rejected"
+    lr.reviewer_notes = data.get("notes")
+    db.session.commit()
+    return jsonify({"request": lr.to_dict()})
 
 @admin_bp.route("/orders", methods=["GET"])
 @admin_required
 def admin_list_orders():
     status = request.args.get("status")
-    query = Order.query.order_by(Order.created_at.desc())
+    query = Order.query
     if status:
         query = query.filter_by(status=status)
-    return jsonify({"orders": [order.to_dict() for order in query.all()]})
+    orders = query.order_by(Order.created_at.desc()).all()
+    return jsonify({"orders": [o.to_dict() for o in orders]})
 
 
-def _update_order_status(order_id, status):
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({"error": "Order not found"}), 404
-    order.status = status
-    db.session.commit()
-    return jsonify({"order": order.to_dict()})
+ORDER_STATUS_FLOW = ["paid", "approved", "shipped", "delivered"]
 
 
 @admin_bp.route("/orders/<int:order_id>/approve", methods=["POST"])
 @admin_required
 def admin_approve_order(order_id):
-    return _update_order_status(order_id, "approved")
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+    if order.status not in ("paid",):
+        return jsonify({"error": f"Order cannot be approved from status '{order.status}'"}), 400
+    order.status = "approved"
+    db.session.commit()
+    return jsonify({"order": order.to_dict()})
 
 
 @admin_bp.route("/orders/<int:order_id>/reject", methods=["POST"])
 @admin_required
 def admin_reject_order(order_id):
-    return _update_order_status(order_id, "cancelled")
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+    if order.status not in ("paid", "approved"):
+        return jsonify({"error": f"Order cannot be rejected from status '{order.status}'"}), 400
+    order.status = "cancelled"
+    db.session.commit()
+    return jsonify({"order": order.to_dict()})
 
 
 @admin_bp.route("/orders/<int:order_id>/advance", methods=["POST"])
@@ -161,9 +157,26 @@ def admin_advance_order(order_id):
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
-    next_status = {"approved": "shipped", "shipped": "delivered"}.get(order.status)
-    if not next_status:
-        return jsonify({"error": f"Cannot advance order from {order.status}"}), 400
-    order.status = next_status
+    if order.status not in ("approved", "shipped"):
+        return jsonify({"error": f"Order cannot be advanced from status '{order.status}'"}), 400
+    next_index = ORDER_STATUS_FLOW.index(order.status) + 1
+    order.status = ORDER_STATUS_FLOW[next_index]
     db.session.commit()
     return jsonify({"order": order.to_dict()})
+
+
+@admin_bp.route("/dashboard", methods=["GET"])
+@admin_required
+def admin_dashboard():
+    revenue = db.session.query(db.func.sum(Order.total)).filter(
+        Order.status.in_(["paid", "approved", "shipped", "delivered"])
+    ).scalar() or 0.0
+
+    return jsonify({
+        "total_books": Book.query.count(),
+        "pending_lending_requests": LendingRequest.query.filter_by(status="pending").count(),
+        "active_loans": LendingRequest.query.filter_by(status="approved").count(),
+        "total_orders": Order.query.count(),
+        "orders_awaiting_approval": Order.query.filter_by(status="paid").count(),
+        "total_revenue": round(revenue, 2),
+    })

@@ -3,8 +3,6 @@ from app import db
 
 
 class LendingRequest(db.Model):
-    """Sprint 4 - Task 1: Create Lending Database Model
-    Tracks the full lifecycle: pending -> approved/rejected -> borrowed -> returned."""
     __tablename__ = "lending_requests"
 
     id = db.Column(db.Integer, primary_key=True)

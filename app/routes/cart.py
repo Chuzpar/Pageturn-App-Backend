@@ -18,7 +18,6 @@ def get_cart():
     return jsonify({"items": [i.to_dict() for i in items], "subtotal": round(subtotal, 2)})
 
 
-@cart_bp.route("/items", methods=["POST"])
 @jwt_required()
 def add_to_cart():
     data = request.get_json(force=True, silent=True) or {}
@@ -43,7 +42,6 @@ def add_to_cart():
     db.session.add(item)
     db.session.commit()
     return jsonify({"item": item.to_dict()}), 201
-
 
 @cart_bp.route("/items/<int:item_id>", methods=["DELETE"])
 @jwt_required()
@@ -70,5 +68,4 @@ def update_cart_item(item_id):
     if "lending_days" in data:
         item.lending_days = data["lending_days"]
     db.session.commit()
-    return jsonify({"item": item.to_dict()})
     return jsonify({"item": item.to_dict()})

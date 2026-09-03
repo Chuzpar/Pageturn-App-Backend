@@ -4,17 +4,17 @@ from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from flask_migrate import Migrate
 
 db = SQLAlchemy()
 jwt = JWTManager()
+migrate = Migrate()
 
 
 def create_app(config_overrides=None):
     app = Flask(__name__)
 
-    # --- Sprint 1, Task 2 & 3: Configure Flask Backend / PostgreSQL Database ---
     database_url = os.environ.get("DATABASE_URL", "sqlite:///pageturn.db")
-    # Render/Heroku style URLs sometimes use postgres:// — SQLAlchemy needs postgresql://
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -29,8 +29,9 @@ def create_app(config_overrides=None):
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
+    from app.models import user, book, cart, order, lending, review, favorite  # noqa: F401
+    migrate.init_app(app, db)
 
-    # --- Register blueprints (one per feature area, matching the sprints) ---
     from app.routes.auth import auth_bp
     from app.routes.books import books_bp
     from app.routes.cart import cart_bp
@@ -58,7 +59,7 @@ def create_app(config_overrides=None):
         return jsonify({"error": "Internal server error"}), 500
 
     with app.app_context():
-        from app.models import user, book, cart, order, lending  # noqa: F401
-        db.create_all()
+        if not os.environ.get("SKIP_AUTO_CREATE"):
+            db.create_all()
 
-        return app
+    return app
