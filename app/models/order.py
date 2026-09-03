@@ -14,6 +14,7 @@ class Order(db.Model):
     tax = db.Column(db.Float, nullable=False, default=0.0)
     total = db.Column(db.Float, nullable=False, default=0.0)
     status = db.Column(db.String(30), default="paid")  # paid, processing, shipped, delivered
+    mpesa_checkout_request_id = db.Column(db.String(60), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship("OrderItem", backref="order", lazy=True, cascade="all, delete-orphan")

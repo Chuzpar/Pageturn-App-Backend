@@ -1,10 +1,13 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
+
+load_dotenv()  # reads .env into os.environ (MPESA_*, DATABASE_URL, etc.)
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -45,6 +48,9 @@ def create_app(config_overrides=None):
     app.register_blueprint(orders_bp, url_prefix="/api/orders")
     app.register_blueprint(lending_bp, url_prefix="/api/lending")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+
+    from app.routes.mpesa import mpesa_bp
+    app.register_blueprint(mpesa_bp, url_prefix="/api/mpesa")
 
     @app.route("/api/health")
     def health():
