@@ -49,6 +49,9 @@ def create_app(config_overrides=None):
     app.register_blueprint(lending_bp, url_prefix="/api/lending")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
+    from app.routes.mpesa import mpesa_bp
+    app.register_blueprint(mpesa_bp, url_prefix="/api/mpesa")
+
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok", "service": "PageTurn API"})
