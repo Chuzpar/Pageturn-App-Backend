@@ -82,5 +82,6 @@ def stk_push(phone, amount, account_reference, transaction_desc):
     url = f"{DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest"
 
     response = requests.post(url, json=payload, headers=headers, timeout=15)
-    response.raise_for_status()
+    if not response.ok:
+        raise Exception(f"Daraja error {response.status_code}: {response.text}")
     return response.json()
