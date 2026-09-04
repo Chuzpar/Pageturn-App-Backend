@@ -1,3 +1,5 @@
+import os
+
 from app import create_app, db
 from app.models.user import User
 from app.models.book import Book
@@ -34,23 +36,29 @@ BOOKS = [
 
 
 def run():
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
+     with app.app_context():
+          if os.environ.get("RESET_DATABASE") == "1":
+               db.drop_all()
+          db.create_all()
 
-        admin = User(full_name="Curator Admin", email="admin@pageturn.dev", role="admin")
-        admin.set_password("admin123")
-        member = User(full_name="Jane Reader", email="jane@pageturn.dev", role="member")
-        member.set_password("password123")
-        db.session.add_all([admin, member])
+          if not User.query.filter_by(email="admin@pageturn.dev").first():
+               admin = User(full_name="Curator Admin", email="admin@pageturn.dev", role="admin")
+               admin.set_password("admin123")
+               db.session.add(admin)
 
-        for b in BOOKS:
-            db.session.add(Book(**b))
+          if not User.query.filter_by(email="jane@pageturn.dev").first():
+               member = User(full_name="Jane Reader", email="jane@pageturn.dev", role="member")
+               member.set_password("password123")
+               db.session.add(member)
 
-        db.session.commit()
-        print("Seeded database with 2 users and", len(BOOKS), "books.")
-        print("  Admin login:  admin@pageturn.dev / admin123")
-        print("  Member login: jane@pageturn.dev / password123")
+          for b in BOOKS:
+               if not Book.query.filter_by(title=b["title"], author=b["author"]).first():
+                    db.session.add(Book(**b))
+
+          db.session.commit()
+          print("Seeded database without removing existing users and", len(BOOKS), "books.")
+          print("  Admin login:  admin@pageturn.dev / admin123")
+          print("  Member login: jane@pageturn.dev / password123")
 
 
 if __name__ == "__main__":

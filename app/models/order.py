@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 from app import db
 
 
@@ -13,7 +14,10 @@ class Order(db.Model):
     shipping_fee = db.Column(db.Float, nullable=False, default=4.99)
     tax = db.Column(db.Float, nullable=False, default=0.0)
     total = db.Column(db.Float, nullable=False, default=0.0)
-    status = db.Column(db.String(30), default="paid")  # paid, processing, shipped, delivered
+    status = db.Column(db.String(30), default="pending")
+    merchant_reference = db.Column(db.String(80), unique=True, nullable=False,
+                                   default=lambda: str(uuid4()))
+    pesapal_tracking_id = db.Column(db.String(120), unique=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship("OrderItem", backref="order", lazy=True, cascade="all, delete-orphan")
@@ -28,6 +32,8 @@ class Order(db.Model):
             "tax": self.tax,
             "total": self.total,
             "status": self.status,
+            "merchant_reference": self.merchant_reference,
+            "pesapal_tracking_id": self.pesapal_tracking_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "items": [i.to_dict() for i in self.items],
         }

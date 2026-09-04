@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
+from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -22,6 +23,7 @@ def create_app(config_overrides=None):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-me")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
+    app.config["PESAPAL_CALLBACK_URL"] = os.environ.get("PESAPAL_CALLBACK_URL")
 
     if config_overrides:
         app.config.update(config_overrides)
@@ -61,5 +63,8 @@ def create_app(config_overrides=None):
     with app.app_context():
         if not os.environ.get("SKIP_AUTO_CREATE"):
             db.create_all()
+            if "avatar_url" not in {column["name"] for column in inspect(db.engine).get_columns("users")}:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)"))
+                db.session.commit()
 
     return app
