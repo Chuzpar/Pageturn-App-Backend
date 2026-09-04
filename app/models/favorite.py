@@ -2,15 +2,13 @@ from datetime import datetime
 from app import db
 
 
-class CartItem(db.Model):
-    __tablename__ = "cart_items"
+class Favorite(db.Model):
+    __tablename__ = "favorites"
+    __table_args__ = (db.UniqueConstraint("user_id", "book_id", name="one_favorite_per_user_per_book"),)
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    cart_type = db.Column(db.String(20), nullable=False, default="purchase")  # 'purchase' | 'lending'
-    lending_days = db.Column(db.Integer, nullable=True)  # e.g. "Borrow for 14 Days"
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     book = db.relationship("Book")
@@ -19,7 +17,5 @@ class CartItem(db.Model):
         return {
             "id": self.id,
             "book": self.book.to_dict() if self.book else None,
-            "quantity": self.quantity,
-            "cart_type": self.cart_type,
-            "lending_days": self.lending_days,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
