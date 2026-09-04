@@ -13,7 +13,8 @@ to exactly:
 python3 seed.py && exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --access-logfile - run:app
 ```
 
-Do not use only `python3 seed.py` as the Start Command. `seed.py` exits after
+Do not use `gunicorn app:app`; the Flask application is exposed by `run.py` as
+`run:app`. Do not use only `python3 seed.py` either: `seed.py` exits after
 seeding; `exec gunicorn ...` must run afterward so Render has a persistent web
 process.
 

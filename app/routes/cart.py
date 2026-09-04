@@ -18,6 +18,7 @@ def get_cart():
     return jsonify({"items": [i.to_dict() for i in items], "subtotal": round(subtotal, 2)})
 
 
+@cart_bp.route("", methods=["POST"])
 @jwt_required()
 def add_to_cart():
     data = request.get_json(force=True, silent=True) or {}
