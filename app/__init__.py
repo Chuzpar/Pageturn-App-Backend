@@ -5,7 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
-from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -23,14 +22,25 @@ def create_app(config_overrides=None):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-me")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
-    app.config["PESAPAL_CALLBACK_URL"] = os.environ.get("PESAPAL_CALLBACK_URL")
 
     if config_overrides:
         app.config.update(config_overrides)
 
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app)
+
+    # CORS — allow the Vercel frontend
+    origins = os.environ.get("CORS_ORIGINS", "*")
+    if origins == "*":
+        CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
+    else:
+        origin_list = [o.strip() for o in origins.split(",") if o.strip()]
+        CORS(
+            app,
+            resources={r"/api/*": {"origins": origin_list}},
+            supports_credentials=True,
+        )
+
     from app.models import user, book, cart, order, lending, review, favorite  # noqa: F401
     migrate.init_app(app, db)
 
@@ -48,6 +58,13 @@ def create_app(config_overrides=None):
     app.register_blueprint(lending_bp, url_prefix="/api/lending")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
+    # Optional: only register payments if the file exists
+    try:
+        from app.routes.payments import payments_bp
+        app.register_blueprint(payments_bp, url_prefix="/api/payments")
+    except ImportError:
+        pass
+
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok", "service": "PageTurn API"})
@@ -63,8 +80,5 @@ def create_app(config_overrides=None):
     with app.app_context():
         if not os.environ.get("SKIP_AUTO_CREATE"):
             db.create_all()
-            if "avatar_url" not in {column["name"] for column in inspect(db.engine).get_columns("users")}:
-                db.session.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)"))
-                db.session.commit()
 
     return app

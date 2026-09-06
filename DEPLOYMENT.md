@@ -13,10 +13,21 @@ to exactly:
 python3 seed.py && exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --access-logfile - run:app
 ```
 
-Do not use `gunicorn app:app`; the Flask application is exposed by `run.py` as
-`run:app`. Do not use only `python3 seed.py` either: `seed.py` exits after
+The preferred command is `run:app`; `app:app` is also supported for older
+Render service settings. Do not use only `python3 seed.py`: `seed.py` exits after
 seeding; `exec gunicorn ...` must run afterward so Render has a persistent web
 process.
+
+In the Vercel frontend project, set this environment variable and redeploy the
+frontend:
+
+```text
+API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
+```
+
+Replace `YOUR-RENDER-SERVICE` with the exact hostname shown in Render. Do not
+use `http://localhost:5000` in a deployed frontend. The cart API supports both
+`POST /api/cart` and `POST /api/cart/items`.
 
 Set the `sync: false` values in the Render dashboard after the first Blueprint
 sync:
