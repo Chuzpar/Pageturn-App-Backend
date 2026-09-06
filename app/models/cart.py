@@ -10,7 +10,7 @@ class CartItem(db.Model):
     book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     cart_type = db.Column(db.String(20), nullable=False, default="purchase")  # 'purchase' | 'lending'
-    lending_days = db.Column(db.Integer, nullable=True)  # e.g. "Borrow for 14 Days"
+    lending_days = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     book = db.relationship("Book")

@@ -25,13 +25,26 @@ def create_app(config_overrides=None):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-me")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
+    app.config["PESAPAL_CALLBACK_URL"] = os.environ.get("PESAPAL_CALLBACK_URL")
+    app.config["PESAPAL_IPN_URL"] = os.environ.get("PESAPAL_IPN_URL")
 
     if config_overrides:
         app.config.update(config_overrides)
 
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app)
+
+    origins = os.environ.get("CORS_ORIGINS", "*")
+    if origins == "*":
+        CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
+    else:
+        origin_list = [o.strip() for o in origins.split(",") if o.strip()]
+        CORS(
+            app,
+            resources={r"/api/*": {"origins": origin_list}},
+            supports_credentials=True,
+        )
+
     from app.models import user, book, cart, order, lending, review, favorite  # noqa: F401
     migrate.init_app(app, db)
 
@@ -51,6 +64,12 @@ def create_app(config_overrides=None):
 
     from app.routes.mpesa import mpesa_bp
     app.register_blueprint(mpesa_bp, url_prefix="/api/mpesa")
+
+    try:
+        from app.routes.payments import payments_bp
+        app.register_blueprint(payments_bp, url_prefix="/api/payments")
+    except ImportError:
+        pass
 
     @app.route("/api/health")
     def health():

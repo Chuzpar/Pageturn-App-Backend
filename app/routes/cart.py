@@ -14,7 +14,11 @@ def get_cart():
     cart_type = request.args.get("type", "purchase")
     user = current_user()
     items = CartItem.query.filter_by(user_id=user.id, cart_type=cart_type).all()
-    subtotal = sum((i.book.price * i.quantity) for i in items if i.cart_type == "purchase" and i.book)
+    subtotal = sum(
+        (i.book.price * i.quantity)
+        for i in items
+        if i.cart_type == "purchase" and i.book
+    )
     return jsonify({"items": [i.to_dict() for i in items], "subtotal": round(subtotal, 2)})
 
 
@@ -32,17 +36,25 @@ def add_to_cart():
         return jsonify({"error": "Book not found"}), 404
 
     user = current_user()
-    existing = CartItem.query.filter_by(user_id=user.id, book_id=book_id, cart_type=cart_type).first()
+    existing = CartItem.query.filter_by(
+        user_id=user.id, book_id=book_id, cart_type=cart_type
+    ).first()
     if existing and cart_type == "purchase":
         existing.quantity += quantity
         db.session.commit()
         return jsonify({"item": existing.to_dict()}), 200
 
-    item = CartItem(user_id=user.id, book_id=book_id, quantity=quantity,
-                     cart_type=cart_type, lending_days=lending_days)
+    item = CartItem(
+        user_id=user.id,
+        book_id=book_id,
+        quantity=quantity,
+        cart_type=cart_type,
+        lending_days=lending_days,
+    )
     db.session.add(item)
     db.session.commit()
     return jsonify({"item": item.to_dict()}), 201
+
 
 @cart_bp.route("/items/<int:item_id>", methods=["DELETE"])
 @jwt_required()

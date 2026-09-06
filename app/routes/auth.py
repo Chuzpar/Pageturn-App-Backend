@@ -23,7 +23,12 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "An account with this email already exists"}), 409
 
-    user = User(full_name=full_name, email=email, role=data.get("role", "member"))
+    user = User(
+        full_name=full_name,
+        email=email,
+        role=data.get("role", "member"),
+        avatar_url=(data.get("avatar_url") or "").strip() or None,
+    )
     user.set_password(password)  # Task 10: password hashing
     db.session.add(user)
     db.session.commit()
@@ -62,6 +67,7 @@ def update_profile():
     data = request.get_json(force=True, silent=True) or {}
     full_name = data.get("full_name")
     email = data.get("email")
+    avatar_url = data.get("avatar_url")
     new_password = data.get("new_password")
     current_password = data.get("current_password")
 
@@ -73,6 +79,9 @@ def update_profile():
         if User.query.filter(User.email == new_email, User.id != user.id).first():
             return jsonify({"error": "That email is already in use"}), 409
         user.email = new_email
+
+    if avatar_url is not None:
+        user.avatar_url = avatar_url.strip() or None
 
     if new_password:
         # Changing the password requires re-confirming the current one.
