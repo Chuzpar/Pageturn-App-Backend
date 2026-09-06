@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.book import Book
 from app.models.lending import LendingRequest
-from app.models.order import Order
+from app.models.order import Order, OrderItem
 from app.utils import admin_required, current_user
 
 admin_bp = Blueprint("admin", __name__)
@@ -86,12 +86,24 @@ def admin_delete_book(book_id):
     if not book:
         return jsonify({"error": "Book not found"}), 404
 
+    # 1. Guard against breaking completed/existing order history
+    if OrderItem.query.filter_by(book_id=book_id).first():
+        return jsonify({
+            "error": f"Cannot delete \"{book.title}\": it is linked to existing member order records."
+        }), 400
+
+    # 2. Guard against deleting books currently borrowed
+    if LendingRequest.query.filter_by(book_id=book_id, status="approved").first():
+        return jsonify({
+            "error": f"Cannot delete \"{book.title}\": it is currently checked out on loan by a member."
+        }), 400
+
     try:
-        CartItem.query.filter_by(book_id=book_id).delete(synchronize_session=False)
-        Favorite.query.filter_by(book_id=book_id).delete(synchronize_session=False)
-        Review.query.filter_by(book_id=book_id).delete(synchronize_session=False)
-        LendingRequest.query.filter_by(book_id=book_id).delete(synchronize_session=False)
-        OrderItem.query.filter_by(book_id=book_id).delete(synchronize_session=False)
+        # Clean up related records safe to delete
+        LendingRequest.query.filter_by(book_id=book_id).delete()
+        CartItem.query.filter_by(book_id=book_id).delete()
+        Favorite.query.filter_by(book_id=book_id).delete()
+        Review.query.filter_by(book_id=book_id).delete()
 
         db.session.delete(book)
         db.session.commit()
