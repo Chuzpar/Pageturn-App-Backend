@@ -14,9 +14,9 @@ class Order(db.Model):
     shipping_fee = db.Column(db.Float, nullable=False, default=4.99)
     tax = db.Column(db.Float, nullable=False, default=0.0)
     total = db.Column(db.Float, nullable=False, default=0.0)
-    status = db.Column(db.String(30), default="pending")
-    merchant_reference = db.Column(db.String(80), unique=True, nullable=False,
-                                   default=lambda: str(uuid4()))
+    status = db.Column(db.String(30), default="pending")  # pending, paid, processing, shipped, delivered, failed
+    mpesa_checkout_request_id = db.Column(db.String(60), nullable=True, index=True)
+    merchant_reference = db.Column(db.String(80), unique=True, nullable=False, default=lambda: str(uuid4()))
     pesapal_tracking_id = db.Column(db.String(120), unique=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
