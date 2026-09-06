@@ -17,3 +17,5 @@ PyJWT==2.13.0
 SQLAlchemy==2.0.52
 typing_extensions==4.16.0
 Werkzeug==3.0.4
+python-dotenv==1.0.1
+requests==2.32.3
