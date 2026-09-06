@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.book import Book
+from app.models.cart import CartItem
+from app.models.favorite import Favorite
+from app.models.review import Review
 from app.models.lending import LendingRequest
 from app.models.order import Order
 from app.utils import admin_required, current_user
@@ -63,9 +66,16 @@ def admin_delete_book(book_id):
     book = Book.query.get(book_id)
     if not book:
         return jsonify({"error": "Book not found"}), 404
-    db.session.delete(book)
-    db.session.commit()
-    return jsonify({"message": "Book deleted"})
+    try:
+        CartItem.query.filter_by(book_id=book_id).delete()
+        Favorite.query.filter_by(book_id=book_id).delete()
+        Review.query.filter_by(book_id=book_id).delete()
+        db.session.delete(book)
+        db.session.commit()
+        return jsonify({"message": "Book deleted"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete book: {str(e)}"}), 500
 
 
 @admin_bp.route("/lending-requests", methods=["GET"])
