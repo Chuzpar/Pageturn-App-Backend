@@ -19,6 +19,7 @@ def get_cart():
 
 
 @cart_bp.route("", methods=["POST"])
+@cart_bp.route("/items", methods=["POST"])
 @jwt_required()
 def add_to_cart():
     data = request.get_json(force=True, silent=True) or {}
