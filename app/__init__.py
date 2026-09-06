@@ -22,6 +22,8 @@ def create_app(config_overrides=None):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-me")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
+    app.config["PESAPAL_CALLBACK_URL"] = os.environ.get("PESAPAL_CALLBACK_URL")
+    app.config["PESAPAL_IPN_URL"] = os.environ.get("PESAPAL_IPN_URL")
 
     if config_overrides:
         app.config.update(config_overrides)
@@ -29,7 +31,6 @@ def create_app(config_overrides=None):
     db.init_app(app)
     jwt.init_app(app)
 
-    # CORS — allow the Vercel frontend
     origins = os.environ.get("CORS_ORIGINS", "*")
     if origins == "*":
         CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
@@ -58,7 +59,6 @@ def create_app(config_overrides=None):
     app.register_blueprint(lending_bp, url_prefix="/api/lending")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
-    # Optional: only register payments if the file exists
     try:
         from app.routes.payments import payments_bp
         app.register_blueprint(payments_bp, url_prefix="/api/payments")
